@@ -23,6 +23,10 @@ def run_loader(model, loader, config):
     predictions = []
     ground_truth = []
 
+    # Variables for validation loss
+    total_val_loss = 0.0
+    tot_samples = 0
+
     with torch.no_grad():
         for images, segs, depths, intrinsics, extrinsics, labels in tqdm(loader, desc="Running validation"):
             if config['gt_depth']:
@@ -34,13 +38,24 @@ def run_loader(model, loader, config):
                 gt_depth = None
 
             outs, seg_outs, depths = model.forward(images, intrinsics, extrinsics, gt_depth=gt_depth)
+
+            # Compute the batch loss
+            loss = model.loss(outs, labels.to(outs.device))
+            batch_size = labels.shape[0]
+            total_val_loss += loss.item() * batch_size
+            tot_samples += batch_size
+
             outs = outs.detach().cpu()
 
             predictions.append(model.activate(outs))
             ground_truth.append(labels)
 
+    # Mean validation loss on the validation set
+    val_loss = total_val_loss / tot_samples
+
     return (torch.cat(predictions, dim=0),
-            torch.cat(ground_truth, dim=0))
+            torch.cat(ground_truth, dim=0),
+            val_loss)
 
 
 def save_pred(pred, label, out_path):

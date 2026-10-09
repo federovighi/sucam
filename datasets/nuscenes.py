@@ -376,7 +376,7 @@ def compile_data(is_train, version, dataroot, pos_class, batch_size=8, num_worke
         data,
         batch_size=batch_size,
         num_workers=num_workers,
-        shuffle=True,
+        shuffle=is_train,
         drop_last=drop_last,
         pin_memory=True
     )

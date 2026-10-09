@@ -89,6 +89,10 @@ def train():
         model.train()
         t_0_ep = time()
 
+        # For epoch related train loss
+        total_train_loss = 0.0
+        tot_samples = 0
+
         writer.add_scalar('train/epoch', epoch, step)
 
         for images, segs, depths, intrinsics, extrinsics, labels in train_loader:
@@ -96,6 +100,10 @@ def train():
             t_0 = time()
 
             outs, seg_outs, dep_outs, loss, seg_loss, dep_loss = model.train_step(images, segs, depths, intrinsics, extrinsics, labels, use_gt_depth=config['gt_depth'])
+            # Computing the train loss
+            b_size = labels.shape[0]
+            total_train_loss += loss.item() * b_size
+            tot_samples += b_size
             step += 1
 
             if scheduler is not None:
@@ -123,6 +131,11 @@ def train():
                 writer.add_scalar(f'train/iou', iou, step)
                 writer.add_scalar(f'train/depth_rse', rse, step)
 
+        # Computing the average train loss for epoch
+        avg_train_loss = total_train_loss / tot_samples
+        writer.add_scalar('train/epoch_loss', avg_train_loss, epoch)
+        print(f"Training Epoch Loss {avg_train_loss:.5f}")
+
         print(f"Epoch Time: {time()-t_0_ep}")
 
         if config['no_val']:
@@ -130,13 +143,16 @@ def train():
 
         model.eval()
 
-        preds, labels = run_loader(model, val_loader, config)
+        preds, labels, val_loss = run_loader(model, val_loader, config)
 
         _, _, iou = get_iou(preds, labels)
         writer.add_scalar(f'val/iou', iou, epoch)
+        writer.add_scalar(f'val/loss', val_loss, epoch)
         print(f"Validation mIOU: {iou}")
+        print(f"Validation loss: {val_loss:.5f}")
 
         model.save(os.path.join(config['logdir'], f'{epoch}.pt'))
+    writer.close()
 
 
 if __name__ == "__main__":
@@ -145,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("dataset")
     parser.add_argument("backbone")
     parser.add_argument('-q', '--queue', default=False, action='store_true')
-    parser.add_argument('-g', '--gpus', nargs='+', default=[7], type=int)
+    parser.add_argument('-g', '--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('-l', '--logdir', default='test', type=str)
     parser.add_argument('-b', '--batch_size', default=32, type=int)
     parser.add_argument('-s', '--split', default="trainval", required=False, type=str)
