@@ -1,48 +1,47 @@
-# SUCAM — Installazione, dataset e training
+# SUCAM — Installation, Dataset Preparation, and Training
 
-Questa guida descrive come configurare SUCAM su Linux (x86_64) con GPU NVIDIA, preparare nuScenes, generare le label necessarie e avviare il training.
+This guide explains how to set up SUCAM on Linux (x86_64) with an NVIDIA GPU, prepare the nuScenes dataset, generate the required labels, and start training.
 
-## File necessari per l'installazione
+## Required installation files
 
-- `sucam-conda-explicit.txt`: elenco dei pacchetti Conda e delle relative build per Linux x86_64.
-- `requirements-locked.txt`: dipendenze Python con versioni bloccate, escluse quelle installate separatamente (`torch`, `torchvision`, `mmcv-full`).
-- `sucam-pip-freeze.txt`: elenco di riferimento dei pacchetti Python (non necessario per eseguire i comandi sotto).
+- `sucam-conda-explicit.txt`: Conda package list with exact builds for Linux x86_64.
+- `requirements-locked.txt`: pinned Python dependencies, excluding packages installed separately (`torch`, `torchvision`, and `mmcv-full`).
 
-I file di dipendenze devono essere disponibili nella directory da cui si lanciano i relativi comandi. Gli URL nell'elenco Conda richiedono che i pacchetti siano ancora disponibili sui repository indicati.
+The dependency files must be available in the directory where you run the corresponding commands. The URLs in the Conda package list require the referenced packages to remain available in their respective repositories.
 
-## 1. Creazione dell'environment Conda
+## 1. Create the Conda environment
 
-Dalla cartella che contiene `sucam-conda-explicit.txt`:
+From the directory containing `sucam-conda-explicit.txt`:
 
 ```bash
 conda create -n SUCAM --file sucam-conda-explicit.txt
 conda activate SUCAM
 ```
 
-Python 3.8.20 è già specificato nell'elenco Conda; non serve aggiungere `python=...`.
+Python 3.8.20 is already specified in the Conda package list; there is no need to add `python=...`.
 
-## 2. Installare PyTorch e i pacchetti Python bloccati
+## 2. Install PyTorch and pinned Python packages
 
 ```bash
 python -m pip install 'torch==2.1.0+cu118' 'torchvision==0.16.0+cu118' --index-url https://download.pytorch.org/whl/cu118
 python -m pip install -r requirements-locked.txt
 ```
 
-Il file `requirements-locked.txt` contiene anche le dipendenze di `openmim`/`openxlab`. Non è una selezione minimale di pacchetti.
+`requirements-locked.txt` also includes `openmim`/`openxlab` dependencies. It is not a minimal dependency list.
 
-## 3. Installare MMCV
+## 3. Install MMCV
 
-Solo dopo che PyTorch funziona:
+After installing PyTorch:
 
 ```bash
 python -m mim install 'mmcv-full==1.7.2'
 ```
 
-L’installazione richiede una wheel binaria compatibile oppure la compilazione locale di MMCV.
+Installation requires either a compatible prebuilt wheel or a successful local build of MMCV.
 
-## 4. Preparare la compilazione SUCAM
+## 4. Build the SUCAM extension
 
-Dalla root del repository SUCAM, con l’environment `SUCAM` attivo:
+From the root of the SUCAM repository, with the `SUCAM` environment activated:
 
 ```bash
 export CUDA_HOME="$CONDA_PREFIX"
@@ -51,33 +50,33 @@ unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH
 export LDFLAGS="-Wl,--sysroot=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot"
 ```
 
-La variabile `LDFLAGS` imposta il sysroot del toolchain Conda per la compilazione.
+`LDFLAGS` selects the Conda toolchain sysroot for compilation.
 
-Compilare nella cartella in cui è presente setup.py:
+Run the build from the directory containing `setup.py`:
 
 ```bash
 MAX_JOBS=2 python setup.py build_ext --inplace
 ```
 
-`setup.py` imposta internamente le architetture `sm_70, sm_75, sm_80, sm_86`: `TORCH_CUDA_ARCH_LIST=8.9` non sovrascrive necessariamente questi flag. L’estensione `.so` deve essere compilata per Python 3.8 dell’environment `SUCAM`.
+`setup.py` explicitly sets the `sm_70`, `sm_75`, `sm_80`, and `sm_86` architectures; setting `TORCH_CUDA_ARCH_LIST=8.9` does not necessarily override those flags. The compiled `.so` extension must match Python 3.8 in the `SUCAM` environment.
 
-## 5. Preparazione del dataset nuScenes
+## 5. Prepare the nuScenes dataset
 
-Per generare le label necessarie a SUCAM servono **nuScenes v1.0-trainval** (metadati, immagini delle camere, point cloud LiDAR e mappe) e l'espansione **nuScenes-lidarseg v1.0**, che fornisce le annotazioni semantiche dei punti LiDAR. Quest'ultima non è inclusa nei normali archivi di nuScenes.
+Generating the labels required by SUCAM needs **nuScenes v1.0-trainval** (metadata, camera images, LiDAR point clouds, and maps) and the **nuScenes-lidarseg v1.0** extension, which provides semantic annotations for LiDAR points. The lidarseg extension is not included in the standard nuScenes archives.
 
-Scaricare il dataset principale dal [sito ufficiale nuScenes](https://www.nuscenes.org/nuscenes#download) e predisporlo in una cartella `nuscenes/`. Scaricare anche l'espansione lidarseg:
+Download the main dataset from the [official nuScenes website](https://www.nuscenes.org/nuscenes#download) and extract it into a `nuscenes/` directory. Download the lidarseg extension as well:
 
 ```bash
 wget https://d36yt3mvayqw5m.cloudfront.net/public/nuscenes-lidarseg-v1.0/nuScenes-lidarseg-all-v1.0.tar.bz2
 ```
 
-Dalla cartella che contiene sia l'archivio sia la directory `nuscenes/`, estrarre con:
+From the directory containing both the archive and the `nuscenes/` directory, extract it using:
 
 ```bash
 tar -xvf nuScenes-lidarseg-all-v1.0.tar.bz2 -C nuscenes/
 ```
 
-La struttura richiesta per `v1.0-trainval` è:
+The required directory structure for `v1.0-trainval` is:
 
 ```text
 nuscenes/
@@ -85,54 +84,54 @@ nuscenes/
 ├── sweeps/
 ├── maps/
 ├── lidarseg/
-│   └── v1.0-trainval/      # Annotazioni LiDAR semantiche (.bin)
+│   └── v1.0-trainval/      # Semantic LiDAR annotations (.bin)
 ├── v1.0-trainval/
-│   ├── lidarseg.json       # Metadati dell'espansione lidarseg
+│   ├── lidarseg.json       # Lidarseg extension metadata
 │   └── ...
-└── SUCAM_labels/           # PNG generati dallo script SUCAM
+└── SUCAM_labels/           # PNG files generated by SUCAM
 ```
 
-`SUCAM_labels/` va creata prima della generazione; si trova **nella root di nuScenes**, allo stesso livello di `samples/` e `sweeps/`. Tutti i PNG di training e validation sono memorizzati direttamente in questa cartella.
+Create `SUCAM_labels/` before generating labels. It belongs **at the root of the nuScenes dataset**, alongside `samples/` and `sweeps/`. Training and validation PNG files are stored directly in this directory.
 
-### Collegare il dataset alla repository
+### Link the dataset to the repository
 
-Dalla root della repository SUCAM, il codice si aspetta il dataset nel percorso relativo `../data/nuscenes`. Se il dataset risiede altrove, creare un symbolic link:
+From the root of the SUCAM repository, the code expects the dataset at the relative path `../data/nuscenes`. If your dataset is stored elsewhere, create a symbolic link:
 
 ```bash
 mkdir -p ../data
-ln -s /percorso/assoluto/del/dataset/nuscenes/ ../data/nuscenes
+ln -s /absolute/path/to/dataset/nuscenes/ ../data/nuscenes
 mkdir -p ../data/nuscenes/SUCAM_labels
 ```
 
-Il link `../data/nuscenes` punta alla root del dataset reale: non occorre duplicare i dati.
+The `../data/nuscenes` link points to the actual dataset root, so there is no need to duplicate the data.
 
-**Nota sulle modifiche già presenti nel fork:** `datasets/nuscenes.py` è stato adattato alla struttura standard di nuScenes: `get_nusc()` non aggiunge più `trainval` a `dataroot`; lettura (`cv2.imread`) e scrittura (`cv2.imwrite`) delle label ausiliarie utilizzano entrambe `SUCAM_labels/` al posto di `gen_labels/`. Queste modifiche sono già presenti nel repository e **non vanno applicate nuovamente**.
+**Note on changes already included in this fork:** `datasets/nuscenes.py` has been adapted to the standard nuScenes directory layout. `get_nusc()` no longer appends `trainval` to `dataroot`, and both auxiliary-label loading (`cv2.imread`) and saving (`cv2.imwrite`) use `SUCAM_labels/` instead of `gen_labels/`. These changes are already included in the repository and **do not need to be applied manually**.
 
-## 6. Generazione delle label SUCAM
+## 6. Generate SUCAM labels
 
-Prima del training, dalla root della repository eseguire:
+Before training, run the following from the repository root:
 
 ```bash
 python gen_labels.py
 ```
 
-Lo script non richiede argomenti da terminale: utilizza il dataset `trainval` collegato in `../data/nuscenes`, scorre prima il training set e poi il validation set e attiva la generazione tramite `dataset.gen_labels = True`. Per ciascuna vista camera elabora informazioni LiDAR e lidarseg, producendo un PNG con mappa di profondità e segmentazione ausiliaria. I file vengono nominati con il token nuScenes del relativo `sample_data`, ad esempio `SUCAM_labels/<camera_sample_data_token>.png`.
+The script takes no command-line arguments. It uses the `trainval` dataset linked at `../data/nuscenes`, iterates first over the training set and then over the validation set, and enables label generation with `dataset.gen_labels = True`. For each camera view, it processes LiDAR and lidarseg information to create a PNG containing a depth map and auxiliary segmentation information. Each file is named after its nuScenes `sample_data` token, for example `SUCAM_labels/<camera_sample_data_token>.png`.
 
-Le label sono richieste dal loader originale anche quando le loss ausiliarie `--seg` e `--dep` sono disabilitate. `gen_labels.py` genera i file **prima** del training; non è necessario eseguirlo a ogni avvio successivo se le label sono già complete.
+The original dataset loader requires these labels even when the auxiliary `--seg` and `--dep` losses are disabled. Run `gen_labels.py` **before** training; you do not need to rerun it for subsequent training runs if the complete set of labels is already present.
 
-## 7. Avvio del training
+## 7. Start training
 
-Dalla root della repository, con l'environment attivo:
+From the repository root, with the environment activated:
 
 ```bash
 python train.py nuscenes sucam
 ```
 
-I due argomenti sono **posizionali**:
+Both arguments are **positional**:
 
-- `nuscenes` è il **nome del dataset** selezionato nel codice (`datasets['nuscenes']`); non è un percorso da scrivere nel comando. Il suo percorso reale viene costruito come `../data/nuscenes`, che può essere il symbolic link configurato sopra.
-- `sucam` è il **nome dell'architettura** da usare, non il percorso di una backbone o di un checkpoint.
+- `nuscenes` is the **dataset identifier** selected by the code (`datasets['nuscenes']`), not a filesystem path entered on the command line. The actual path is constructed as `../data/nuscenes`, which may be the symbolic link configured above.
+- `sucam` is the **architecture identifier**, not a path to backbone weights or a checkpoint.
 
-Per impostazione predefinita viene utilizzata la classe `vehicle`; per selezionare l'altra classe supportata si può specificare `--pos_class driveable`. Nel codice la GPU predefinita è `[0]` (prima GPU CUDA); per selezionarne un’altra usare `--gpus` seguito dagli indici.
+By default, training targets the `vehicle` class. To train for the other supported class, use `--pos_class driveable`. The default GPU selection in this fork is `[0]` (the first CUDA GPU); use `--gpus` followed by GPU indices to select a different device.
 
-Il training registra le metriche in TensorBoard, comprese le loss medie di training e validation per epoca, ed esegue validation e salvataggio del checkpoint al termine di ogni epoca. La directory di output predefinita è `test/` e può essere cambiata con `--logdir`.
+Training records metrics in TensorBoard, including mean training and validation losses per epoch, and runs validation and saves a checkpoint at the end of each epoch. The default output directory is `test/`; it can be changed using `--logdir`.
