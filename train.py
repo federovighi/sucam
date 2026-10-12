@@ -163,7 +163,7 @@ if __name__ == "__main__":
     parser.add_argument('-q', '--queue', default=False, action='store_true')
     parser.add_argument('-g', '--gpus', nargs='+', default=[0], type=int)
     parser.add_argument('-l', '--logdir', default='test', type=str)
-    parser.add_argument('-b', '--batch_size', default=32, type=int)
+    parser.add_argument('-b', '--batch_size', default=4, type=int)
     parser.add_argument('-s', '--split', default="trainval", required=False, type=str)
 
     parser.add_argument('-p', '--pretrained', required=False, type=str)

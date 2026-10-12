@@ -259,12 +259,12 @@ class NuScenesDataset(torch.utils.data.Dataset):
                 depth[depth < 0] = bins
                 depth = depth.astype(np.uint8)
 
-                cv2.imwrite(os.path.join(self.dataroot, f"gen_labels/{rec['data'][cam]}.png"), np.stack([depth, seg, np.zeros_like(depth)], axis=2).astype(np.uint8))
+                cv2.imwrite(os.path.join(self.dataroot, f"SUCAM_labels/{rec['data'][cam]}.png"), np.stack([depth, seg, np.zeros_like(depth)], axis=2).astype(np.uint8))
             
                 depth = torch.tensor(depth).long()
                 seg = torch.tensor(seg).long()
             else:
-                ds = cv2.imread(os.path.join(self.dataroot, f"gen_labels/{rec['data'][cam]}.png"))
+                ds = cv2.imread(os.path.join(self.dataroot, f"SUCAM_labels/{rec['data'][cam]}.png"))
 
                 depth = torch.tensor(ds[:, :, 0]).long()
                 seg = torch.tensor(ds[:, :, 1]).long()
@@ -357,7 +357,6 @@ class NuScenesDataset(torch.utils.data.Dataset):
 
 
 def get_nusc(version, dataroot):
-    dataroot = os.path.join(dataroot, version)
     nusc = NuScenes(version=f'v1.0-{version}', dataroot=dataroot, verbose=False)
 
     return nusc, dataroot
