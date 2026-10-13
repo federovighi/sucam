@@ -109,7 +109,7 @@ def train():
             if scheduler is not None:
                 scheduler.step()
 
-            if step % 10 == 0:
+            if step % 50 == 0 and step > 0:
                 print(f"[{epoch}]", step, loss.item(), time()-t_0)
                 writer.add_scalar('train/step_time', time() - t_0, step)
                 writer.add_scalar('train/loss', loss, step)
@@ -123,7 +123,7 @@ def train():
                 if config['seg']:
                     save_pred(seg_outs.sigmoid().unsqueeze(0), segs, os.path.join(config['logdir'], "seg"))
 
-            if step % 50 == 0:
+            if step % 250 == 0 and step > 0:
                 _, _, iou = get_iou(model.activate(outs).cpu(), labels)
                 rse = get_rse(dep_outs.argmax(dim=1).flatten().cpu().float(), depths.flatten().cpu().float())
 
