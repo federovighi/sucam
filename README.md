@@ -135,3 +135,28 @@ Both arguments are **positional**:
 By default, training targets the `vehicle` class. To train for the other supported class, use `--pos_class driveable`. The default GPU selection in this fork is `[0]` (the first CUDA GPU); use `--gpus` followed by GPU indices to select a different device.
 
 Training records metrics in TensorBoard, including mean training and validation losses per epoch, and runs validation and saves a checkpoint at the end of each epoch. The default output directory is `test/`; it can be changed using `--logdir`.
+
+## 8. Evaluate a trained model
+
+To evaluate a trained SUCAM model on the nuScenes validation set, run the following command from the repository root with the `SUCAM` Conda environment activated:
+
+```bash
+python eval.py nuscenes --pretrained /path/to/checkpoint.pt
+```
+
+Replace `/path/to/checkpoint.pt` with the path to the checkpoint generated during training.
+
+For example:
+
+```bash
+python eval.py nuscenes --pretrained test/first_20epochs/16.pt
+```
+
+The arguments are:
+
+- `nuscenes`: the dataset identifier, which uses the same dataset configuration as training.
+- `--pretrained`: the path to the trained model checkpoint (`.pt`) to load for evaluation.
+
+Evaluation uses the nuScenes validation split and the dataset linked at `../data/nuscenes`. Ensure that the dataset and the previously generated `SUCAM_labels/` directory are available before running evaluation.
+
+The checkpoint can be selected from any completed training epoch, allowing the performance of different checkpoints to be compared.
