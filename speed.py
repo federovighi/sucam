@@ -2,6 +2,7 @@ from pathlib import Path
 from tqdm import tqdm
 import time
 
+import argparse
 import torch
 
 from datasets.nuscenes import compile_data
@@ -10,9 +11,13 @@ from models.model import Model
 
 def main():
 
+    parser = argparse.ArgumentParser(description="SUCAM inference speed benchmark")
+    parser.add_argument("--checkpoint",type=Path,required=True,help="Path to the model checkpoint (.pt)")
+    args = parser.parse_args()
+
     device = torch.device("cuda:0")
 
-    ckpt_path = Path("test/first_20epochs/16.pt") # Mettere il checkpoint desiderato
+    ckpt_path = args.checkpoint
 
     assert ckpt_path.exists(), \
         f"[Error] Checkpoint not found at {ckpt_path}"

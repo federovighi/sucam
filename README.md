@@ -160,3 +160,13 @@ The arguments are:
 Evaluation uses the nuScenes validation split and the dataset linked at `../data/nuscenes`. Ensure that the dataset and the previously generated `SUCAM_labels/` directory are available before running evaluation.
 
 The checkpoint can be selected from any completed training epoch, allowing the performance of different checkpoints to be compared.
+
+## 9. Inference Speed Benchmark
+
+To measure SUCAM inference speed (FPS) on the GPU, run the following command from the repository root:
+
+```bash
+python sucam_speed.py --checkpoint /path/to/checkpoint.pt
+```
+
+The benchmark performs 50 warm-up iterations followed by 1000 timed forward passes, using a batch size of 1 (6 camera images per sample). GPU synchronization is used to ensure accurate timing. The script reports the average inference latency (ms) and throughput (FPS), excluding data loading and preprocessing.
